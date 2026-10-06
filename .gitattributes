@@ -1,0 +1,2 @@
+# 커밋 전 자동 점검 훅은 줄바꿈이 LF여야 윈도우 git에서도 정상 실행됩니다.
+.githooks/* text eol=lf

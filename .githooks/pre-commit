@@ -1,0 +1,26 @@
+#!/bin/sh
+# 커밋 버튼을 누를 때마다 check.py(푸시 전 점검)를 자동으로 실행합니다.
+#  - 점검 통과: 평소처럼 커밋됩니다.
+#  - 문제 발견(check.py가 1을 돌려줌): 커밋을 막고 어디가 문제인지 보여줍니다.
+#  - 파이썬을 못 찾는 등 점검 자체를 못 돌린 경우: 커밋을 막지 않고 건너뜁니다.
+# 이 설정을 없애고 싶으면 이 파일(.git/hooks/pre-commit)을 지우면 됩니다.
+
+[ -f check.py ] || exit 0
+export PYTHONIOENCODING=utf-8
+
+for PY in python py python3; do
+  if command -v "$PY" >/dev/null 2>&1; then
+    "$PY" check.py
+    status=$?
+    if [ "$status" -eq 0 ]; then
+      exit 0
+    fi
+    if [ "$status" -eq 1 ]; then
+      echo "check.py 점검에서 문제가 발견되어 커밋을 중단했습니다. 위 내용을 확인하세요." >&2
+      exit 1
+    fi
+  fi
+done
+
+echo "[경고] 파이썬을 찾지 못해 check.py 점검을 건너뛰고 커밋합니다." >&2
+exit 0
