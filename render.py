@@ -7,12 +7,14 @@
 """
 import html
 import json
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from config import INDEX_CARDS, MACRO_ITEMS
-from data import fetch_ecos, fetch_fred, fetch_price_history, fetch_price_series, fetch_watch_quote
+from config import (BOK_DATES, CALENDAR_DAYS, EARNINGS_IMPORTANCE, FOMC_DATES, FRED_RELEASES,
+                    INDEX_CARDS, MACRO_ITEMS)
+from data import (fetch_earnings_date, fetch_ecos, fetch_fred, fetch_fred_release_dates, fetch_price_history,
+                  fetch_price_series, fetch_watch_quote)
 from heatmap import build_heatmaps
 from sheets import load_watchlist
 
@@ -65,16 +67,50 @@ def _card_chart(dates, values, color, kind):
     line = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
     area = f"0,{CHART_H} {line} {CHART_W},{CHART_H}"          # 선 아래를 옅게 칠하는 영역
     data = html.escape(json.dumps({"d": dates, "v": [round(v, 4) for v in values], "k": kind}))
+    marks = _extreme_marks(dates, values, pts, color, kind)
     return (f'<div class="chart" data-series="{data}" style="position: relative; height: {CHART_H}px; cursor: crosshair;">'
             f'<svg width="100%" height="{CHART_H}" viewBox="0 0 {CHART_W} {CHART_H}" preserveAspectRatio="none" aria-hidden="true">'
             f'<polygon points="{area}" fill="{color}" opacity="0.10"/>'
             f'<polyline points="{line}" fill="none" stroke="{color}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'
+            f'{marks}'
             f'<div class="hl" style="display: none; position: absolute; top: 0; bottom: 0; width: 1px; background: #5a606b;"></div>'
             f'<div class="dot" style="display: none; position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; '
             f'border-radius: 50%; background: {color}; border: 2px solid #181b21; box-sizing: content-box;"></div>'
             f'<div class="tip num" style="display: none; position: absolute; top: 0; padding: 3px 8px; border-radius: 6px; '
             f'background: #2a2f38; border: 1px solid #3a404b; font-size: 12px; white-space: nowrap; pointer-events: none;"></div>'
             f'</div>')
+
+
+def _fmt_value(v, kind):
+    """카드 값 표시 형식 (금리 %, 달러 정수, 나머지 소수 둘째 자리)."""
+    if kind == "yield":
+        return f"{v:.2f}%"
+    if kind == "usd":
+        return f"${v:,.0f}"
+    return f"{v:,.2f}"
+
+
+def _extreme_marks(dates, values, pts, color, kind):
+    """그래프에서 1개월 최고점·최저점에 짧은 가로 막대를 긋고 옆에 값과 날짜를 적습니다."""
+    out = []
+    i_hi = max(range(len(values)), key=lambda i: values[i])
+    i_lo = min(range(len(values)), key=lambda i: values[i])
+    for i in (i_hi, i_lo):
+        x_pct = pts[i][0] / CHART_W * 100
+        y = pts[i][1]
+        # 점이 왼쪽 절반에 있으면 글자를 오른쪽에, 오른쪽 절반이면 왼쪽에 붙여 카드 밖으로 나가지 않게 합니다.
+        if x_pct < 50:
+            pos = f"left: calc({x_pct:.2f}% + 9px);"
+        else:
+            pos = f"right: calc({100 - x_pct:.2f}% + 9px);"
+        top = max(0, min(CHART_H - 14, y - 7))
+        # 최고·최저 위치에 짧은 가로 막대
+        out.append(f'<div style="position: absolute; left: {x_pct:.2f}%; top: {y:.1f}px; width: 12px; height: 2px; '
+                   f'margin: -1px 0 0 -6px; background: #ecebe6; border-radius: 1px; pointer-events: none;"></div>')
+        out.append(f'<div class="num" style="position: absolute; {pos} top: {top:.1f}px; font-size: 10.5px; '
+                   f'color: #cfd3da; white-space: nowrap; pointer-events: none; text-shadow: 0 0 3px #181b21, 0 0 3px #181b21;">'
+                   f'{_fmt_value(values[i], kind)} <span style="color: #8d939d;">{dates[i]}</span></div>')
+    return "".join(out)
 
 
 def _index_card(name, ticker, kind, scale):
@@ -203,6 +239,68 @@ def build_watchlist():
     return "\n".join(rows), _watch_add_button(sheet_url), failed
 
 
+WEEKDAYS = "월화수목금토일"
+
+
+def _calendar_events(today):
+    """오늘부터 CALENDAR_DAYS일 뒤까지의 일정: [(날짜, 나라, 이름, 중요도), ...] 와 안내 문구."""
+    end = today + timedelta(days=CALENDAR_DAYS)
+    events, note = [], ""
+
+    def add(day_text, country, name, importance):
+        d = date.fromisoformat(day_text)
+        if today <= d <= end:
+            events.append((d, country, name, importance))
+
+    for d in FOMC_DATES:
+        add(d, "US", "FOMC 금리 결정", 3)
+    for d in BOK_DATES:
+        add(d, "KR", "한국은행 기준금리 결정", 2)
+
+    releases = fetch_fred_release_dates(today.isoformat(), end.isoformat())
+    if releases is None:
+        note = "FRED 인증키 필요 · "        # 키가 없거나 실패하면 미국 지표 발표일만 빠짐
+    else:
+        seen = set()
+        for day_text, name in releases:
+            if name in FRED_RELEASES and (day_text, name) not in seen:
+                seen.add((day_text, name))
+                label, importance = FRED_RELEASES[name]
+                add(day_text, "US", label, importance)
+
+    items, _, _ = load_watchlist()
+    for it in items:
+        day_text = fetch_earnings_date(it["code"], it["market"])
+        if day_text:
+            add(day_text, it["market"], f'{it["name"]} 실적 발표', EARNINGS_IMPORTANCE)
+
+    events.sort(key=lambda e: (e[0], -e[3]))
+    return events, note
+
+
+def build_calendar(today=None):
+    """경제 일정 줄들과 머리글 안내 문구를 돌려줍니다."""
+    today = today or datetime.now(KST).date()
+    events, note = _calendar_events(today)
+    if not events:
+        return ('      <div style="padding: 24px 4px; font-size: 13px; color: #a3a9b3;">'
+                f'앞으로 {CALENDAR_DAYS}일 안에 등록된 일정이 없어요.</div>'), note
+    rows = []
+    for i, (d, country, name, importance) in enumerate(events):
+        border = "" if i == len(events) - 1 else " border-bottom: 1px solid #20242b;"
+        is_today = d == today
+        day_color = "#ecebe6" if is_today else "#a3a9b3"
+        day_text = "오늘" if is_today else f"{d:%m/%d} {WEEKDAYS[d.weekday()]}"
+        dots = "●" * importance + f'<span style="color: #3a3f48;">{"●" * (3 - importance)}</span>'
+        rows.append(
+            f'      <div style="display: flex; align-items: center; gap: 14px; height: 44px; flex-shrink: 0;{border}">'
+            f'<span class="num" style="width: 64px; font-size: 12px; color: {day_color};">{day_text}</span>'
+            f'<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #262a32; color: #cfd3da;">{country}</span>'
+            f'<span style="flex-grow: 1; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{html.escape(name)}</span>'
+            f'<span style="font-size: 12px; color: #d9a441; letter-spacing: 2px;">{dots}</span></div>')
+    return "\n".join(rows), note
+
+
 def market_status(now_kst):
     """상단 바의 장 상태 글자와 점 색. 공휴일은 따지지 않는 간단한 계산입니다."""
     if now_kst.weekday() < 5 and (9, 0) <= (now_kst.hour, now_kst.minute) < (15, 30):
@@ -231,6 +329,7 @@ def build_dashboard_html(now_kst=None):
     watch_rows, watch_add, watch_failed = build_watchlist()
     failed_names += watch_failed
 
+    cal_rows, cal_note = build_calendar(now_kst.date())
     heatmap_tabs, heatmap_html, heatmap_failed = build_heatmaps()
     failed_names += heatmap_failed
 
@@ -250,6 +349,8 @@ def build_dashboard_html(now_kst=None):
         "{{MACRO_ROWS}}": "\n".join(rows),
         "{{WATCH_ROWS}}": watch_rows,
         "{{HEATMAP_TABS}}": heatmap_tabs,
+        "{{CAL_ROWS}}": cal_rows,
+        "{{CAL_NOTE}}": cal_note,
         "{{HEATMAP}}": heatmap_html,
         "{{WATCH_ADD}}": watch_add,
         "{{FAILED_NOTE}}": html.escape(failed_note),

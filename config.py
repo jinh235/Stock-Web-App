@@ -14,6 +14,7 @@ REFRESH_MACRO_SEC = 24 * 60 * 60  # 금리·물가 같은 거시지표: 하루 1
 # secrets.toml(또는 Streamlit Cloud의 Secrets)에 들어 있어야 하는 항목: 이름 → 설명
 SECRET_ITEMS = {
     "ECOS_API_KEY": "한국은행 ECOS 인증키",
+    "FRED_API_KEY": "FRED 인증키 (미국 지표 발표일)",
     "DATA_GO_KR_API_KEY": "공공데이터포털 인증키",
 }
 
@@ -91,3 +92,34 @@ HEATMAPS = {
         ("통신·기타", ["TMUS", "CMCSA", "LIN", "HON"]),
     ],
 }
+
+# ---------------------------------------------------------------- 경제 일정
+CALENDAR_DAYS = 14    # 오늘부터 며칠 뒤까지 보여줄지
+
+# FRED 발표 일정에서 골라 보여줄 미국 지표: FRED의 영문 발표 이름 → (화면 이름, 중요도 1~3)
+FRED_RELEASES = {
+    "Consumer Price Index": ("소비자물가지수 (CPI)", 3),
+    "Employment Situation": ("고용보고서 (비농업 고용)", 3),
+    "Personal Income and Outlays": ("개인소비지출 (PCE)", 3),
+    "Gross Domestic Product": ("국내총생산 (GDP)", 2),
+    "Producer Price Index": ("생산자물가지수 (PPI)", 2),
+    "Advance Monthly Sales for Retail and Food Services": ("소매판매", 2),
+    "Job Openings and Labor Turnover Survey": ("구인건수 (JOLTS)", 1),
+}
+
+# FOMC 금리 결정일 (회의 둘째 날, 미국 날짜 - 한국 시간으로는 다음 날 새벽 3시경 발표)
+#   연준이 매년 다음 해 일정을 미리 발표합니다. 연 1회 federalreserve.gov에서 확인해 추가하세요.
+FOMC_DATES = [
+    "2026-01-28", "2026-03-18", "2026-04-29", "2026-06-17",
+    "2026-07-29", "2026-09-16", "2026-10-28", "2026-12-09",
+    # 2027년은 연준의 잠정 일정 (확정되면 다시 확인)
+    "2027-01-27", "2027-03-17", "2027-04-28", "2027-06-09",
+    "2027-07-28", "2027-09-15", "2027-10-27", "2027-12-08",
+]
+
+# 한국은행 금융통화위원회 기준금리 결정일. 매년 말 한국은행이 다음 해 일정을 발표하면 추가하세요.
+BOK_DATES = [
+    "2026-01-15", "2026-02-26", "2026-04-10", "2026-05-28",
+    "2026-07-16", "2026-08-27", "2026-10-22", "2026-11-26",
+]
+EARNINGS_IMPORTANCE = 2   # 관심종목 실적 발표의 중요도

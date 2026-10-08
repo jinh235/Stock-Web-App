@@ -150,3 +150,36 @@ def fetch_market_caps(tickers):
     with ThreadPoolExecutor(max_workers=8) as pool:
         caps = dict(zip(tickers, pool.map(_market_cap, tickers)))
     return {t: c for t, c in caps.items() if c}
+
+
+# ---------------------------------------------------------------- 경제 일정
+@st.cache_data(ttl=REFRESH_MACRO_SEC, show_spinner=False)
+def fetch_fred_release_dates(start, end):
+    """FRED 발표 일정: [(날짜, 영문 발표 이름), ...]. 인증키가 없거나 실패하면 None.
+    start, end는 "YYYY-MM-DD" 글자입니다."""
+    key = get_secret("FRED_API_KEY")
+    if not key:
+        return None
+    url = "https://api.stlouisfed.org/fred/releases/dates"
+    params = {"api_key": key, "file_type": "json", "realtime_start": start, "realtime_end": end,
+              "include_release_dates_with_no_data": "true", "sort_order": "asc", "limit": 1000}
+    try:
+        res = requests.get(url, params=params, timeout=TIMEOUT)
+        res.raise_for_status()
+        return [(r["date"], r["release_name"]) for r in res.json().get("release_dates", [])]
+    except Exception:
+        return None
+
+
+@st.cache_data(ttl=REFRESH_MACRO_SEC, show_spinner=False)
+def fetch_earnings_date(code, market):
+    """종목의 다음 실적 발표일("YYYY-MM-DD")을 돌려줍니다. 모르면 None. 하루 1번만 확인합니다."""
+    tickers = [f"{code}.KS", f"{code}.KQ"] if market == "KR" else [code]
+    for ticker in tickers:
+        try:
+            dates = yf.Ticker(ticker).calendar.get("Earnings Date") or []
+        except Exception:
+            continue
+        if dates:
+            return str(min(dates))[:10]
+    return None
