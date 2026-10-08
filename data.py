@@ -73,23 +73,30 @@ def fetch_fred(series_id, years=3):
 
 # ---------------------------------------------------------------- 한국은행 ECOS
 @st.cache_data(ttl=REFRESH_MACRO_SEC, show_spinner=False)
+def _ecos_rows(key, code, years):
+    """실제로 ECOS에 요청하는 부분. 실패하면 오류를 일으켜 실패 결과가 저장되지 않게 합니다."""
+    stat, item = code.split("/")
+    start = (date.today() - timedelta(days=365 * years)).strftime("%Y%m%d")
+    end = date.today().strftime("%Y%m%d")
+    url = (f"https://ecos.bok.or.kr/api/StatisticSearch/{key}/json/kr/1/2000/"
+           f"{stat}/D/{start}/{end}/{item}")
+    res = requests.get(url, timeout=TIMEOUT)
+    res.raise_for_status()
+    rows = res.json().get("StatisticSearch", {}).get("row", [])
+    out = [(pd.Timestamp(r["TIME"]).date(), float(r["DATA_VALUE"])) for r in rows if r.get("DATA_VALUE")]
+    if not out:
+        raise RuntimeError("ECOS 자료 없음")
+    return out
+
+
 def fetch_ecos(code, years=3):
     """ECOS 통계 하나를 [(날짜, 값), ...] (오래된 것 → 최신)으로 돌려줍니다. 실패하면 None.
     code는 "통계코드/항목코드" 형식입니다. 예: "722Y001/0101000" (한국은행 기준금리, 일별)"""
     key = get_secret("ECOS_API_KEY")
     if not key:
         return None
-    stat, item = code.split("/")
-    start = (date.today() - timedelta(days=365 * years)).strftime("%Y%m%d")
-    end = date.today().strftime("%Y%m%d")
-    url = (f"https://ecos.bok.or.kr/api/StatisticSearch/{key}/json/kr/1/2000/"
-           f"{stat}/D/{start}/{end}/{item}")
     try:
-        res = requests.get(url, timeout=TIMEOUT)
-        res.raise_for_status()
-        rows = res.json().get("StatisticSearch", {}).get("row", [])
-        out = [(pd.Timestamp(r["TIME"]).date(), float(r["DATA_VALUE"])) for r in rows if r.get("DATA_VALUE")]
-        return out or None
+        return _ecos_rows(key, code, years)
     except Exception:
         return None
 
@@ -154,21 +161,33 @@ def fetch_market_caps(tickers):
 
 # ---------------------------------------------------------------- 경제 일정
 @st.cache_data(ttl=REFRESH_MACRO_SEC, show_spinner=False)
-def fetch_fred_release_dates(start, end):
-    """FRED 발표 일정: [(날짜, 영문 발표 이름), ...]. 인증키가 없거나 실패하면 None.
-    start, end는 "YYYY-MM-DD" 글자입니다."""
-    key = get_secret("FRED_API_KEY")
-    if not key:
-        return None
+def _fred_release_dates(key, start, end):
+    """실제로 FRED에 요청하는 부분. 실패하면 오류를 일으켜서 '실패 결과'가 하루 동안 저장되지 않게 합니다.
+    (st.cache_data는 오류가 난 결과는 저장하지 않습니다)
+    key를 인자로 받으므로, 인증키를 새로 넣거나 바꾸면 바로 다시 요청합니다."""
     url = "https://api.stlouisfed.org/fred/releases/dates"
     params = {"api_key": key, "file_type": "json", "realtime_start": start, "realtime_end": end,
               "include_release_dates_with_no_data": "true", "sort_order": "asc", "limit": 1000}
+    res = requests.get(url, params=params, timeout=TIMEOUT)
+    if res.status_code != 200:
+        try:
+            message = res.json().get("error_message", "")
+        except ValueError:
+            message = ""
+        raise RuntimeError(f"FRED 응답 {res.status_code} {message}".strip())
+    return [(r["date"], r["release_name"]) for r in res.json().get("release_dates", [])]
+
+
+def fetch_fred_release_dates(start, end):
+    """FRED 발표 일정: ([(날짜, 영문 발표 이름), ...], 오류 설명).
+    성공하면 오류 설명은 빈 글자, 실패하면 목록은 None. start, end는 "YYYY-MM-DD" 글자입니다."""
+    key = get_secret("FRED_API_KEY")
+    if not key:
+        return None, "FRED 인증키 필요"
     try:
-        res = requests.get(url, params=params, timeout=TIMEOUT)
-        res.raise_for_status()
-        return [(r["date"], r["release_name"]) for r in res.json().get("release_dates", [])]
-    except Exception:
-        return None
+        return _fred_release_dates(key, start, end), ""
+    except Exception as e:
+        return None, f"FRED 연결 실패: {e}"
 
 
 @st.cache_data(ttl=REFRESH_MACRO_SEC, show_spinner=False)

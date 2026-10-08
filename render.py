@@ -257,9 +257,9 @@ def _calendar_events(today):
     for d in BOK_DATES:
         add(d, "KR", "한국은행 기준금리 결정", 2)
 
-    releases = fetch_fred_release_dates(today.isoformat(), end.isoformat())
+    releases, error = fetch_fred_release_dates(today.isoformat(), end.isoformat())
     if releases is None:
-        note = "FRED 인증키 필요 · "        # 키가 없거나 실패하면 미국 지표 발표일만 빠짐
+        note = f"{error} · "        # 키가 없거나 실패하면 미국 지표 발표일만 빠지고, 이유를 머리글에 표시
     else:
         seen = set()
         for day_text, name in releases:
