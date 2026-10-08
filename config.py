@@ -66,3 +66,28 @@ WATCHLIST_SEED = [
     ["Microsoft", "MSFT", "US"],
     ["Tesla", "TSLA", "US"],
 ]
+
+# 미국 시장 히트맵 - 시가총액 상위 종목을 업종별로 묶은 고정 목록입니다.
+#   (업종 이름, [티커, ...]) 순서는 상관없습니다 (타일 크기·배치는 시가총액으로 자동 결정).
+#   몇 달에 한 번 시가총액 순위가 크게 바뀌면 여기서 티커를 넣고 빼면 됩니다.
+REFRESH_MARKETCAP_SEC = 24 * 60 * 60   # 타일 크기(시가총액)는 하루 1번만 새로 받음
+HEATMAPS = {
+    "S&P 500": [
+        ("반도체", ["NVDA", "AVGO", "AMD", "QCOM", "TXN", "MU", "AMAT", "LRCX", "KLAC", "INTC"]),
+        ("빅테크", ["MSFT", "AAPL", "GOOGL", "META", "AMZN"]),
+        ("소프트웨어", ["ORCL", "CRM", "PLTR", "ADBE", "NOW", "IBM", "CSCO"]),
+        ("소비", ["TSLA", "WMT", "COST", "HD", "MCD", "PG", "KO", "PEP"]),
+        ("미디어·통신", ["NFLX", "TMUS", "DIS"]),
+        ("금융", ["BRK-B", "JPM", "V", "MA", "BAC", "WFC", "GS", "MS", "AXP"]),
+        ("헬스케어", ["LLY", "UNH", "JNJ", "ABBV", "MRK", "ABT", "TMO", "ISRG"]),
+        ("산업·에너지", ["XOM", "CVX", "GE", "CAT", "RTX"]),
+    ],
+    "나스닥 100": [
+        ("반도체", ["NVDA", "AVGO", "AMD", "QCOM", "TXN", "MU", "AMAT", "LRCX", "KLAC", "ADI", "INTC", "ASML"]),
+        ("빅테크", ["MSFT", "AAPL", "GOOGL", "META", "AMZN"]),
+        ("소프트웨어·인터넷", ["NFLX", "PLTR", "ADBE", "INTU", "CSCO", "PANW", "CRWD", "APP", "SHOP"]),
+        ("소비", ["TSLA", "COST", "PEP", "BKNG", "SBUX"]),
+        ("헬스케어", ["ISRG", "AMGN", "GILD", "VRTX", "REGN"]),
+        ("통신·기타", ["TMUS", "CMCSA", "LIN", "HON"]),
+    ],
+}

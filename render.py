@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 
 from config import INDEX_CARDS, MACRO_ITEMS
 from data import fetch_ecos, fetch_fred, fetch_price_history, fetch_price_series, fetch_watch_quote
+from heatmap import build_heatmaps
 from sheets import load_watchlist
 
 TEMPLATE_PATH = Path(__file__).resolve().parent / "templates" / "dashboard.html"
@@ -230,6 +231,9 @@ def build_dashboard_html(now_kst=None):
     watch_rows, watch_add, watch_failed = build_watchlist()
     failed_names += watch_failed
 
+    heatmap_tabs, heatmap_html, heatmap_failed = build_heatmaps()
+    failed_names += heatmap_failed
+
     if len(failed_names) > 3:      # 많으면 한 줄에 다 안 들어가서 개수만 표시
         failed_note = f" · 받아오지 못한 자료 {len(failed_names)}개 (인터넷 연결 또는 자료 제공처 확인)"
     elif failed_names:
@@ -245,6 +249,8 @@ def build_dashboard_html(now_kst=None):
         "{{INDEX_CARDS}}": cards,
         "{{MACRO_ROWS}}": "\n".join(rows),
         "{{WATCH_ROWS}}": watch_rows,
+        "{{HEATMAP_TABS}}": heatmap_tabs,
+        "{{HEATMAP}}": heatmap_html,
         "{{WATCH_ADD}}": watch_add,
         "{{FAILED_NOTE}}": html.escape(failed_note),
     }.items():

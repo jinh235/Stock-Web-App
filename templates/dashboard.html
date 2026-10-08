@@ -63,15 +63,8 @@ button{font-family:inherit}
   <div class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0;">
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
       <div style="display: flex; align-items: center; gap: 14px;">
-        <h2 style="margin: 0; font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px;">시장 히트맵 <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #3a3122; color: #d9a441; font-weight: 500;">예시</span></h2>
-        <div style="display: flex; padding: 3px; gap: 2px; background: #0f1115; border-radius: 9px;">
-          <button style="height: 30px; padding: 0 14px; border: 0; border-radius: 7px; background: #2a2f38; color: #f4f2ec; font-size: 13px; font-weight: 600;">국내</button>
-          <button style="height: 30px; padding: 0 14px; border: 0; border-radius: 7px; background: transparent; color: #a3a9b3; font-size: 13px;">미국</button>
-        </div>
-        <div style="display: flex; padding: 3px; gap: 2px; background: #0f1115; border-radius: 9px;">
-          <button style="height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: #2a2f38; color: #f4f2ec; font-size: 13px;">코스피</button>
-          <button style="height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #a3a9b3; font-size: 13px;">코스닥</button>
-        </div>
+        <h2 style="margin: 0; font-size: 17px; font-weight: 600;">미국 시장 히트맵</h2>
+{{HEATMAP_TABS}}
         <span style="font-size: 12px; color: #a3a9b3;">크기 = 시가총액 · 색 = 등락률</span>
       </div>
       <div style="display: flex; align-items: center; gap: 2px;" aria-label="색상 범례">
@@ -87,72 +80,7 @@ button{font-family:inherit}
       </div>
     </div>
 
-    <div style="flex-grow: 1; min-height: 0; display: flex; gap: 3px; background: #0b0d10; padding: 3px; border-radius: 8px;">
-      <!-- 반도체 -->
-      <div class="sec" style="flex-grow: 40;">
-        <div class="sech"><span>반도체</span><span class="num" style="color: #f07178;">+0.21%</span></div>
-        <div class="tiles" style="flex-direction: column;">
-          <div class="tile" style="flex-grow: 56; background: #5f3b40;"><span class="tn" style="font-size: 26px;">삼성전자</span><span class="tp" style="font-size: 16px;">+0.36%</span></div>
-          <div style="flex-grow: 44; flex-basis: 0; min-height: 0; display: flex; gap: 2px;">
-            <div class="tile" style="flex-grow: 68; background: #334363;"><span class="tn" style="font-size: 20px;">SK하이닉스</span><span class="tp" style="font-size: 14px;">−0.63%</span></div>
-            <div class="col" style="flex-grow: 32;">
-              <div class="tile" style="flex-grow: 1; background: #8e3a41;"><span class="tn" style="font-size: 13px;">한미반도체</span><span class="tp" style="font-size: 12px;">+2.14%</span></div>
-              <div class="tile" style="flex-grow: 1; background: #2d4f8e;"><span class="tn" style="font-size: 13px;">DB하이텍</span><span class="tp" style="font-size: 12px;">−1.20%</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- 자동차 · 2차전지 -->
-      <div class="col" style="flex-grow: 32; gap: 3px;">
-        <div class="sec" style="flex-grow: 1;">
-          <div class="sech"><span>자동차</span><span class="num" style="color: #f07178;">+0.74%</span></div>
-          <div class="tiles">
-            <div class="tile" style="flex-grow: 46; background: #8e3a41;"><span class="tn" style="font-size: 17px;">현대차</span><span class="tp" style="font-size: 13px;">+1.26%</span></div>
-            <div class="col" style="flex-grow: 54;">
-              <div class="tile" style="flex-grow: 55; background: #5f3b40;"><span class="tn" style="font-size: 15px;">기아</span><span class="tp" style="font-size: 12px;">+0.81%</span></div>
-              <div class="tile" style="flex-grow: 45; background: #334363;"><span class="tn" style="font-size: 13px;">현대모비스</span><span class="tp" style="font-size: 12px;">−0.52%</span></div>
-            </div>
-          </div>
-        </div>
-        <div class="sec" style="flex-grow: 1;">
-          <div class="sech"><span>2차전지</span><span class="num" style="color: #7fb0ff;">−1.38%</span></div>
-          <div class="tiles">
-            <div class="tile" style="flex-grow: 52; background: #2f63c9;"><span class="tn" style="font-size: 15px;">LG에너지솔루션</span><span class="tp" style="font-size: 13px;">−2.41%</span></div>
-            <div class="col" style="flex-grow: 48;">
-              <div class="tile" style="flex-grow: 1; background: #2d4f8e;"><span class="tn" style="font-size: 14px;">삼성SDI</span><span class="tp" style="font-size: 12px;">−1.08%</span></div>
-              <div class="tile" style="flex-grow: 1; background: #3b3f47;"><span class="tn" style="font-size: 13px;">POSCO홀딩스</span><span class="tp" style="font-size: 12px;">+0.12%</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- 금융 · 바이오 · 인터넷 -->
-      <div class="col" style="flex-grow: 28; gap: 3px;">
-        <div class="sec" style="flex-grow: 36;">
-          <div class="sech"><span>금융</span><span class="num" style="color: #f07178;">+0.72%</span></div>
-          <div class="tiles">
-            <div class="tile" style="flex-grow: 50; background: #8e3a41;"><span class="tn" style="font-size: 15px;">KB금융</span><span class="tp" style="font-size: 12px;">+1.00%</span></div>
-            <div class="col" style="flex-grow: 50;">
-              <div class="tile" style="flex-grow: 1; background: #5f3b40;"><span class="tn" style="font-size: 12px;">신한지주</span><span class="tp" style="font-size: 11px;">+0.71%</span></div>
-              <div class="tile" style="flex-grow: 1; background: #5f3b40;"><span class="tn" style="font-size: 12px;">하나금융</span><span class="tp" style="font-size: 11px;">+0.37%</span></div>
-            </div>
-          </div>
-        </div>
-        <div class="sec" style="flex-grow: 34;">
-          <div class="sech"><span>바이오</span><span class="num" style="color: #f07178;">+0.18%</span></div>
-          <div class="tiles">
-            <div class="tile" style="flex-grow: 55; background: #334363;"><span class="tn" style="font-size: 13px;">삼성바이오</span><span class="tp" style="font-size: 12px;">−0.78%</span></div>
-            <div class="tile" style="flex-grow: 45; background: #8e3a41;"><span class="tn" style="font-size: 13px;">셀트리온</span><span class="tp" style="font-size: 12px;">+1.81%</span></div>
-          </div>
-        </div>
-        <div class="sec" style="flex-grow: 30;">
-          <div class="sech"><span>인터넷</span><span class="num" style="color: #f07178;">+0.64%</span></div>
-          <div class="tiles">
-            <div class="tile" style="flex-grow: 1; background: #2d4f8e;"><span class="tn" style="font-size: 13px;">NAVER</span><span class="tp" style="font-size: 12px;">−1.39%</span></div>
-            <div class="tile" style="flex-grow: 1; background: #c0343f;"><span class="tn" style="font-size: 13px;">카카오</span><span class="tp" style="font-size: 12px;">+3.62%</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
+{{HEATMAP}}
   </div>
 
   <!-- 관심종목 -->
@@ -289,6 +217,19 @@ document.querySelectorAll(".chart").forEach(function(box){
   });
   box.addEventListener("mouseleave",function(){hl.style.display="none";dot.style.display="none";tip.style.display="none";});
 });
+
+// 히트맵 S&P 500 / 나스닥 100 전환. 5분마다 화면이 새로 그려져도 마지막 선택을 유지합니다.
+function showHeatmap(key){
+  document.querySelectorAll(".hm").forEach(function(el){el.style.display=(el.dataset.key===key)?"block":"none";});
+  document.querySelectorAll(".hm-tab").forEach(function(b){
+    var on=b.dataset.key===key; b.style.background=on?"#2a2f38":"transparent"; b.style.color=on?"#f4f2ec":"#a3a9b3"; b.style.fontWeight=on?"600":"400";
+  });
+  try{localStorage.setItem("heatmapKey",key);}catch(e){}
+}
+document.querySelectorAll(".hm-tab").forEach(function(b){b.addEventListener("click",function(){showHeatmap(b.dataset.key);});});
+(function(){var k=null;try{k=localStorage.getItem("heatmapKey");}catch(e){}
+  if(!k||!document.querySelector('.hm[data-key="'+k+'"]')){var f=document.querySelector(".hm");k=f?f.dataset.key:null;}
+  if(k)showHeatmap(k);})();
 
 // 화면이 1440px보다 좁으면 대시보드 전체를 비율대로 줄입니다 (가로 스크롤 방지).
 function fitBoard(){var z=Math.min(1,window.innerWidth/1440);document.getElementById("board").style.zoom=z;}

@@ -9,6 +9,7 @@
   → 5분마다 화면이 새로 그려져도 거시지표는 하루 1번만 실제로 받아옵니다.
 """
 import io
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 
 import pandas as pd
@@ -16,7 +17,7 @@ import requests
 import streamlit as st
 import yfinance as yf
 
-from config import REFRESH_MACRO_SEC, REFRESH_PRICE_SEC, SPARK_PERIOD
+from config import REFRESH_MACRO_SEC, REFRESH_MARKETCAP_SEC, REFRESH_PRICE_SEC, SPARK_PERIOD
 
 TIMEOUT = 15  # 자료 제공처가 응답이 없을 때 최대 기다리는 시간(초)
 
@@ -111,3 +112,41 @@ def fetch_watch_quote(code, market):
                 "high52": float(df["High"].max()),   # 최근 1년(52주) 중 가장 높았던 값
             }
     return None
+
+
+# ---------------------------------------------------------------- 히트맵 (여러 종목 한꺼번에)
+@st.cache_data(ttl=REFRESH_PRICE_SEC, show_spinner=False)
+def fetch_daily_changes(tickers):
+    """여러 종목의 {티커: (현재가, 전일 대비 등락률 %)}를 한 번의 요청으로 받아옵니다.
+    tickers는 캐시 키로 쓰이므로 튜플로 넘겨주세요. 실패하면 빈 사전."""
+    try:
+        df = yf.download(list(tickers), period="5d", interval="1d", progress=False,
+                         threads=True, auto_adjust=True, group_by="column")["Close"]
+    except Exception:
+        return {}
+    out = {}
+    for t in tickers:
+        if t not in df:
+            continue
+        closes = df[t].dropna()
+        if len(closes) >= 2 and closes.iloc[-2]:
+            last, prev = float(closes.iloc[-1]), float(closes.iloc[-2])
+            out[t] = (last, (last / prev - 1) * 100)
+    return out
+
+
+def _market_cap(ticker):
+    try:
+        cap = yf.Ticker(ticker).fast_info["marketCap"]
+        return float(cap) if cap else None
+    except Exception:
+        return None
+
+
+@st.cache_data(ttl=REFRESH_MARKETCAP_SEC, show_spinner=False)
+def fetch_market_caps(tickers):
+    """여러 종목의 {티커: 시가총액(달러)}. 종목마다 따로 물어봐야 해서 8개씩 동시에 받아옵니다.
+    하루 1번만 실제로 받아오고, 받지 못한 종목은 빠집니다."""
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        caps = dict(zip(tickers, pool.map(_market_cap, tickers)))
+    return {t: c for t, c in caps.items() if c}
