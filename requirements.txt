@@ -3,3 +3,5 @@ pandas
 yfinance
 requests
 tzdata
+gspread
+google-auth

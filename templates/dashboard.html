@@ -18,6 +18,7 @@ a{color:#8fb8ff}a:hover{color:#b8d1ff}
 .tn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .tp{font-family:"IBM Plex Mono",monospace;opacity:.92}
 button{font-family:inherit}
+.wl{scrollbar-width:thin;scrollbar-color:#2c313a transparent}
 </style>
 </head>
 <body>
@@ -155,63 +156,16 @@ button{font-family:inherit}
   </div>
 
   <!-- 관심종목 -->
-  <div class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;">
+  <div class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; min-height: 0;">
     <div style="display: flex; align-items: center; justify-content: space-between;">
-      <h2 style="margin: 0; font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px;">관심종목 <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #3a3122; color: #d9a441; font-weight: 500;">예시</span></h2>
-      <button style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #2c313a; background: transparent; color: #ecebe6; font-size: 13px;">+ 종목 추가</button>
+      <h2 style="margin: 0; font-size: 17px; font-weight: 600;">관심종목</h2>
+      {{WATCH_ADD}}
     </div>
     <div style="display: grid; grid-template-columns: 1.5fr 1.1fr 0.9fr 1fr; gap: 8px; font-size: 11px; color: #a3a9b3; padding: 6px 0; border-bottom: 1px solid #262a32;">
       <span>종목</span><span style="text-align: right;">현재가</span><span style="text-align: right;">등락률</span><span style="text-align: right;">52주 범위 위치</span>
     </div>
-    <div style="display: flex; flex-direction: column;">
-      <div style="display: grid; grid-template-columns: 1.5fr 1.1fr 0.9fr 1fr; gap: 8px; align-items: center; height: 50px; border-bottom: 1px solid #20242b;">
-        <div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500;">삼성전자</span><span class="num" style="font-size: 11px; color: #a3a9b3;">005930 · KR</span></div>
-        <span class="num" style="font-size: 14px; text-align: right;">84,300</span>
-        <span class="num" style="font-size: 13px; text-align: right; color: #f07178;">+0.36%</span>
-        <div style="height: 4px; background: #2a2f38; border-radius: 2px; position: relative;"><span style="position: absolute; left: 72%; top: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ecebe6;"></span></div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1.5fr 1.1fr 0.9fr 1fr; gap: 8px; align-items: center; height: 50px; border-bottom: 1px solid #20242b;">
-        <div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500;">SK하이닉스</span><span class="num" style="font-size: 11px; color: #a3a9b3;">000660 · KR</span></div>
-        <span class="num" style="font-size: 14px; text-align: right;">312,500</span>
-        <span class="num" style="font-size: 13px; text-align: right; color: #7fb0ff;">−0.63%</span>
-        <div style="height: 4px; background: #2a2f38; border-radius: 2px; position: relative;"><span style="position: absolute; left: 85%; top: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ecebe6;"></span></div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1.5fr 1.1fr 0.9fr 1fr; gap: 8px; align-items: center; height: 50px; border-bottom: 1px solid #20242b;">
-        <div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500;">현대차</span><span class="num" style="font-size: 11px; color: #a3a9b3;">005380 · KR</span></div>
-        <span class="num" style="font-size: 14px; text-align: right;">241,000</span>
-        <span class="num" style="font-size: 13px; text-align: right; color: #f07178;">+1.26%</span>
-        <div style="height: 4px; background: #2a2f38; border-radius: 2px; position: relative;"><span style="position: absolute; left: 48%; top: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ecebe6;"></span></div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1.5fr 1.1fr 0.9fr 1fr; gap: 8px; align-items: center; height: 50px; border-bottom: 1px solid #20242b;">
-        <div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500;">NAVER</span><span class="num" style="font-size: 11px; color: #a3a9b3;">035420 · KR</span></div>
-        <span class="num" style="font-size: 14px; text-align: right;">218,500</span>
-        <span class="num" style="font-size: 13px; text-align: right; color: #7fb0ff;">−1.39%</span>
-        <div style="height: 4px; background: #2a2f38; border-radius: 2px; position: relative;"><span style="position: absolute; left: 35%; top: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ecebe6;"></span></div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1.5fr 1.1fr 0.9fr 1fr; gap: 8px; align-items: center; height: 50px; border-bottom: 1px solid #20242b;">
-        <div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500;">Apple</span><span class="num" style="font-size: 11px; color: #a3a9b3;">AAPL · US</span></div>
-        <span class="num" style="font-size: 14px; text-align: right;">$238.40</span>
-        <span class="num" style="font-size: 13px; text-align: right; color: #f07178;">+0.52%</span>
-        <div style="height: 4px; background: #2a2f38; border-radius: 2px; position: relative;"><span style="position: absolute; left: 80%; top: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ecebe6;"></span></div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1.5fr 1.1fr 0.9fr 1fr; gap: 8px; align-items: center; height: 50px; border-bottom: 1px solid #20242b;">
-        <div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500;">NVIDIA</span><span class="num" style="font-size: 11px; color: #a3a9b3;">NVDA · US</span></div>
-        <span class="num" style="font-size: 14px; text-align: right;">$182.15</span>
-        <span class="num" style="font-size: 13px; text-align: right; color: #f07178;">+1.84%</span>
-        <div style="height: 4px; background: #2a2f38; border-radius: 2px; position: relative;"><span style="position: absolute; left: 91%; top: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ecebe6;"></span></div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1.5fr 1.1fr 0.9fr 1fr; gap: 8px; align-items: center; height: 50px; border-bottom: 1px solid #20242b;">
-        <div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500;">Microsoft</span><span class="num" style="font-size: 11px; color: #a3a9b3;">MSFT · US</span></div>
-        <span class="num" style="font-size: 14px; text-align: right;">$512.30</span>
-        <span class="num" style="font-size: 13px; text-align: right; color: #7fb0ff;">−0.22%</span>
-        <div style="height: 4px; background: #2a2f38; border-radius: 2px; position: relative;"><span style="position: absolute; left: 76%; top: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ecebe6;"></span></div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1.5fr 1.1fr 0.9fr 1fr; gap: 8px; align-items: center; height: 50px;">
-        <div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500;">Tesla</span><span class="num" style="font-size: 11px; color: #a3a9b3;">TSLA · US</span></div>
-        <span class="num" style="font-size: 14px; text-align: right;">$402.70</span>
-        <span class="num" style="font-size: 13px; text-align: right; color: #7fb0ff;">−2.41%</span>
-        <div style="height: 4px; background: #2a2f38; border-radius: 2px; position: relative;"><span style="position: absolute; left: 60%; top: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ecebe6;"></span></div>
-      </div>
+    <div class="wl" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto;">
+{{WATCH_ROWS}}
     </div>
   </div>
 </section>

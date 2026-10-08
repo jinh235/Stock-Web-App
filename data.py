@@ -83,3 +83,23 @@ def fetch_ecos(code, years=3):
         return out or None
     except Exception:
         return None
+
+
+@st.cache_data(ttl=REFRESH_PRICE_SEC, show_spinner=False)
+def fetch_watch_quote(code, market):
+    """관심종목 한 개의 시세. 반환값: {"last", "prev", "low52", "high52"} 또는 None.
+    한국 종목은 야후 기호가 005930.KS(코스피) / 005930.KQ(코스닥)라서 둘 다 시도합니다."""
+    tickers = [f"{code}.KS", f"{code}.KQ"] if market == "KR" else [code]
+    for ticker in tickers:
+        try:
+            df = yf.Ticker(ticker).history(period="1y", interval="1d").dropna(subset=["Close"])
+        except Exception:
+            continue
+        if len(df) >= 2:
+            return {
+                "last": float(df["Close"].iloc[-1]),
+                "prev": float(df["Close"].iloc[-2]),
+                "low52": float(df["Low"].min()),     # 최근 1년(52주) 중 가장 낮았던 값
+                "high52": float(df["High"].max()),   # 최근 1년(52주) 중 가장 높았던 값
+            }
+    return None

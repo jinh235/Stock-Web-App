@@ -11,7 +11,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from config import INDEX_CARDS, MACRO_ITEMS
-from data import fetch_ecos, fetch_fred, fetch_price_history
+from data import fetch_ecos, fetch_fred, fetch_price_history, fetch_watch_quote
+from sheets import load_watchlist
 
 TEMPLATE_PATH = Path(__file__).resolve().parent / "templates" / "dashboard.html"
 KST = ZoneInfo("Asia/Seoul")
@@ -119,6 +120,66 @@ def _macro_row(name, source, code, kind, is_last):
             f'<span class="num" style="text-align: right; color: #a3a9b3;">{when}</span></div>'), result is None
 
 
+WATCH_GRID = "display: grid; grid-template-columns: 1.5fr 1.1fr 0.9fr 1fr; gap: 8px; align-items: center;"
+
+
+def _watch_add_button(sheet_url):
+    """'+ 종목 추가' 버튼. 시트 주소가 있으면 누를 때 구글 시트가 새 탭으로 열립니다."""
+    style = ("height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #2c313a; "
+             "background: transparent; color: #ecebe6; font-size: 13px;")
+    if not sheet_url:
+        return f'<button style="{style}">+ 종목 추가</button>'
+    return (f'<a href="{html.escape(sheet_url)}" target="_blank" rel="noopener" title="구글 시트에서 종목 추가·삭제" '
+            f'style="{style} display: inline-flex; align-items: center; box-sizing: border-box; text-decoration: none;">'
+            f'+ 종목 추가</a>')
+
+
+def _watch_row(item, is_last):
+    border = "" if is_last else " border-bottom: 1px solid #20242b;"
+    quote = fetch_watch_quote(item["code"], item["market"])
+    if quote is None:
+        price_text, pct_text, color, dot = "—", "—", MUTED, ""
+    else:
+        last, prev = quote["last"], quote["prev"]
+        pct = (last - prev) / prev * 100 if prev else 0
+        color = _color(last - prev)
+        sign = "+" if pct > 0 else (MINUS if pct < 0 else "")
+        pct_text = f"{sign}{abs(pct):.2f}%"
+        price_text = f"{last:,.0f}" if item["market"] == "KR" else f"${last:,.2f}"
+        span = quote["high52"] - quote["low52"]
+        pos = (last - quote["low52"]) / span * 100 if span else 50
+        pos = max(0, min(100, pos))
+        # 점이 막대 밖으로 나가지 않도록 (점 너비 10px) 위치를 살짝 보정합니다.
+        dot = (f'<span title="52주 최저 {quote["low52"]:,.2f} · 최고 {quote["high52"]:,.2f}" '
+               f'style="position: absolute; left: calc({pos:.0f}% - {pos / 10:.1f}px); top: -3px; '
+               f'width: 10px; height: 10px; border-radius: 50%; background: #ecebe6;"></span>')
+    return (f'      <div style="{WATCH_GRID} height: 50px; flex-shrink: 0;{border}">\n'
+            f'        <div style="display: flex; flex-direction: column; min-width: 0;">'
+            f'<span style="font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">'
+            f'{html.escape(item["name"])}</span>'
+            f'<span class="num" style="font-size: 11px; color: #a3a9b3;">{html.escape(item["code"])} · {item["market"]}</span></div>\n'
+            f'        <span class="num" style="font-size: 14px; text-align: right;">{price_text}</span>\n'
+            f'        <span class="num" style="font-size: 13px; text-align: right; color: {color};">{pct_text}</span>\n'
+            f'        <div style="height: 4px; background: #2a2f38; border-radius: 2px; position: relative;">{dot}</div>\n'
+            f'      </div>')
+
+
+def build_watchlist():
+    """관심종목 줄들과 '+ 종목 추가' 버튼, 시세를 못 받은 종목 이름 목록을 돌려줍니다."""
+    items, sheet_url, error = load_watchlist()
+    if error:
+        msg = (f'      <div style="padding: 24px 4px; font-size: 13px; color: #a3a9b3; line-height: 1.6;">'
+               f'관심종목을 불러오지 못했어요.<br><span style="color: #f07178;">{html.escape(error)}</span></div>')
+        return msg, _watch_add_button(""), ["관심종목"]
+    if not items:
+        msg = ('      <div style="padding: 24px 4px; font-size: 13px; color: #a3a9b3;">'
+               '구글 시트 "관심종목" 탭에 종목을 적어 주세요.</div>')
+        return msg, _watch_add_button(sheet_url), []
+    rows = [_watch_row(it, i == len(items) - 1) for i, it in enumerate(items)]
+    failed = [it["name"] for it in items if fetch_watch_quote(it["code"], it["market"]) is None]
+    return "\n".join(rows), _watch_add_button(sheet_url), failed
+
+
 def market_status(now_kst):
     """상단 바의 장 상태 글자와 점 색. 공휴일은 따지지 않는 간단한 계산입니다."""
     if now_kst.weekday() < 5 and (9, 0) <= (now_kst.hour, now_kst.minute) < (15, 30):
@@ -144,6 +205,9 @@ def build_dashboard_html(now_kst=None):
         if failed:
             failed_names.append(item[0])
 
+    watch_rows, watch_add, watch_failed = build_watchlist()
+    failed_names += watch_failed
+
     if len(failed_names) > 3:      # 많으면 한 줄에 다 안 들어가서 개수만 표시
         failed_note = f" · 받아오지 못한 자료 {len(failed_names)}개 (인터넷 연결 또는 자료 제공처 확인)"
     elif failed_names:
@@ -158,6 +222,8 @@ def build_dashboard_html(now_kst=None):
         "{{UPDATED}}": now_kst.strftime("%H:%M:%S"),
         "{{INDEX_CARDS}}": cards,
         "{{MACRO_ROWS}}": "\n".join(rows),
+        "{{WATCH_ROWS}}": watch_rows,
+        "{{WATCH_ADD}}": watch_add,
         "{{FAILED_NOTE}}": html.escape(failed_note),
     }.items():
         page = page.replace(marker, value)

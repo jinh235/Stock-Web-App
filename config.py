@@ -42,3 +42,23 @@ MACRO_ITEMS = [
     ("VIX 공포지수", "yahoo", "^VIX", "level"),
     ("WTI 유가 ($)", "yahoo", "CL=F", "level"),
 ]
+
+# 구글 시트 (관심종목 등 직접 관리하는 목록) - 가계부 앱과 같은 서비스 계정을 씁니다.
+SHEET_NAME = "주식앱"              # 구글 드라이브의 시트 파일 이름 (정확히 같아야 함)
+WATCHLIST_TAB = "관심종목"          # 그 파일 안의 탭 이름
+WATCHLIST_HEADERS = ["종목명", "코드", "시장"]
+SCOPE = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
+# 관심종목 탭을 처음 만들 때 채워 넣는 예시 (목업과 같은 8종목). 이후에는 시트에서 직접 고치세요.
+WATCHLIST_SEED = [
+    ["삼성전자", "005930", "KR"],
+    ["SK하이닉스", "000660", "KR"],
+    ["현대차", "005380", "KR"],
+    ["NAVER", "035420", "KR"],
+    ["Apple", "AAPL", "US"],
+    ["NVIDIA", "NVDA", "US"],
+    ["Microsoft", "MSFT", "US"],
+    ["Tesla", "TSLA", "US"],
+]
