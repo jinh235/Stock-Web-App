@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from config import INDEX_CARDS, MACRO_ITEMS
+from config import INDEX_CARDS, MACRO_ITEMS, STRIP_ITEMS
 from data import fetch_ecos, fetch_fred, fetch_price_history, fetch_watch_quote
 from sheets import load_watchlist
 
@@ -29,45 +29,64 @@ def _color(diff):
     return UP if diff > 0 else DOWN
 
 
-def _sparkline(values, color):
-    """값 목록을 카드 오른쪽 작은 선 그래프(가로 84 × 세로 32)로 바꿉니다."""
+def _sparkline(values, color, width=84, height=32):
+    """값 목록을 카드 오른쪽 작은 선 그래프로 바꿉니다."""
     lo, hi = min(values), max(values)
     span = (hi - lo) or 1
-    step = 84 / (len(values) - 1)
+    step = width / (len(values) - 1)
     # 위아래 4px씩 여백을 두고, 값이 클수록 위쪽(y가 작은 쪽)에 찍힙니다.
-    points = " ".join(f"{i * step:.1f},{28 - (v - lo) / span * 24:.1f}" for i, v in enumerate(values))
+    points = " ".join(f"{i * step:.1f},{height - 4 - (v - lo) / span * (height - 8):.1f}"
+                      for i, v in enumerate(values))
     # 변화 글자가 길면 그래프가 조금 좁아지도록(최소 40px) 해서 글자가 두 줄로 꺾이지 않게 합니다.
-    return (f'<svg width="84" height="32" viewBox="0 0 84 32" preserveAspectRatio="none" '
-            f'style="flex: 0 1 84px; min-width: 40px;" aria-hidden="true">'
+    return (f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" preserveAspectRatio="none" '
+            f'style="flex: 0 1 {width}px; min-width: 40px;" aria-hidden="true">'
             f'<polyline points="{points}" fill="none" stroke="{color}" stroke-width="2"/></svg>')
 
 
-def _index_card(name, ticker, kind):
+def _quote_texts(ticker, kind, scale):
+    """한 종목의 (값 글자, 변화 글자, 색, 값 목록)을 만듭니다. 자료가 없으면 값 목록은 None."""
     values = fetch_price_history(ticker)
     if not values:
-        value_text, change_text, color, spark = "—", "자료 없음", MUTED, ""
+        return "—", "자료 없음", MUTED, None
+    values = [v * scale for v in values]
+    last, prev = values[-1], values[-2]
+    diff = last - prev
+    color = _color(diff)
+    arrow = "▲" if diff > 0 else ("▼" if diff < 0 else "")
+    if kind == "yield":   # 금리는 %, 변화는 %p
+        return f"{last:.2f}%", f"{arrow} {abs(diff):.2f}%p".strip(), color, values
+    pct = diff / prev * 100 if prev else 0
+    sign = "+" if pct > 0 else (MINUS if pct < 0 else "")
+    if kind == "usd":
+        value_text, diff_text = f"${last:,.0f}", f"{abs(diff):,.0f}"
     else:
-        last, prev = values[-1], values[-2]
-        diff = last - prev
-        color = _color(diff)
-        arrow = "▲" if diff > 0 else ("▼" if diff < 0 else "")
-        if kind == "yield":   # 금리는 %, 변화는 %p
-            value_text = f"{last:.2f}%"
-            change_text = f"{arrow} {abs(diff):.2f}%p"
-        else:
-            pct = diff / prev * 100 if prev else 0
-            sign = "+" if pct > 0 else (MINUS if pct < 0 else "")
-            value_text = f"{last:,.2f}"
-            diff_text = f"{abs(diff):,.2f}" if abs(diff) < 100 else f"{abs(diff):,.1f}"  # 목업처럼 114.6
-            change_text = f"{arrow} {diff_text} {sign}{abs(pct):.2f}%"
-        spark = _sparkline(values, color if color != FLAT else MUTED)
-    return f'''  <div class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
-    <span style="font-size: 13px; color: #a3a9b3;">{html.escape(name)}</span>
-    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 8px;">
-      <div style="display: flex; flex-direction: column; gap: 2px;"><span class="num" style="font-size: 22px; font-weight: 600;">{value_text}</span><span class="num" style="font-size: 13px; color: {color}; white-space: nowrap;">{change_text.strip()}</span></div>
+        value_text = f"{last:,.2f}"
+        diff_text = f"{abs(diff):,.2f}" if abs(diff) < 100 else f"{abs(diff):,.1f}"  # 목업처럼 114.6
+    return value_text, f"{arrow} {diff_text} {sign}{abs(pct):.2f}%".strip(), color, values
+
+
+def _index_card(name, ticker, kind, scale):
+    """맨 위 큰 지수 카드 하나 (카드가 4개라 목업보다 글자·그래프를 키웠습니다)."""
+    value_text, change_text, color, values = _quote_texts(ticker, kind, scale)
+    spark = _sparkline(values, color if color != FLAT else MUTED, width=150, height=44) if values else ""
+    return f'''  <div class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 6px;">
+    <span style="font-size: 14px; color: #a3a9b3;">{html.escape(name)}</span>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 2px;"><span class="num" style="font-size: 28px; font-weight: 600;">{value_text}</span><span class="num" style="font-size: 14px; color: {color}; white-space: nowrap;">{change_text}</span></div>
       {spark}
     </div>
   </div>'''
+
+
+def _strip_item(name, ticker, kind, scale, is_last):
+    """카드 아래 한 줄짜리 보조 지표 하나."""
+    value_text, change_text, color, _ = _quote_texts(ticker, kind, scale)
+    border = "" if is_last else " border-right: 1px solid #262a32;"
+    return (f'  <div style="flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; '
+            f'gap: 10px; padding: 0 12px;{border}">'
+            f'<span style="font-size: 12px; color: #a3a9b3; white-space: nowrap;">{html.escape(name)}</span>'
+            f'<span class="num" style="font-size: 15px; font-weight: 600;">{value_text}</span>'
+            f'<span class="num" style="font-size: 12px; color: {color}; white-space: nowrap;">{change_text}</span></div>')
 
 
 def _macro_values(source, code, kind):
@@ -196,7 +215,8 @@ def build_dashboard_html(now_kst=None):
     status_text, status_color = market_status(now_kst)
 
     cards = "\n".join(_index_card(*item) for item in INDEX_CARDS)
-    failed_names = [name for name, ticker, _ in INDEX_CARDS if not fetch_price_history(ticker)]
+    strip = "\n".join(_strip_item(*item, is_last=(i == len(STRIP_ITEMS) - 1)) for i, item in enumerate(STRIP_ITEMS))
+    failed_names = [item[0] for item in INDEX_CARDS + STRIP_ITEMS if not fetch_price_history(item[1])]
 
     rows = []
     for i, item in enumerate(MACRO_ITEMS):
@@ -221,6 +241,7 @@ def build_dashboard_html(now_kst=None):
         "{{STATUS_COLOR}}": status_color,
         "{{UPDATED}}": now_kst.strftime("%H:%M:%S"),
         "{{INDEX_CARDS}}": cards,
+        "{{INDEX_STRIP}}": strip,
         "{{MACRO_ROWS}}": "\n".join(rows),
         "{{WATCH_ROWS}}": watch_rows,
         "{{WATCH_ADD}}": watch_add,

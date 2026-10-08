@@ -22,7 +22,7 @@ button{font-family:inherit}
 </style>
 </head>
 <body>
-<div id="board" style="width: 1440px; height: 1140px; box-sizing: border-box; padding: 24px 32px; display: flex; flex-direction: column; gap: 18px; background: #0f1115;">
+<div id="board" style="width: 1440px; height: 1210px; box-sizing: border-box; padding: 24px 32px; display: flex; flex-direction: column; gap: 18px; background: #0f1115;">
 
 <!-- 상단 바 -->
 <header style="display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 48px;">
@@ -53,8 +53,14 @@ button{font-family:inherit}
 </header>
 
 <!-- 주요 지수 카드 -->
-<section style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px;" aria-label="주요 지수">
+<section style="display: flex; flex-direction: column; gap: 10px;" aria-label="주요 지수">
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
 {{INDEX_CARDS}}
+</div>
+<!-- 보조 지표 한 줄 -->
+<div class="card" style="height: 40px; display: flex; align-items: center; border-radius: 10px;">
+{{INDEX_STRIP}}
+</div>
 </section>
 
 <!-- 히트맵 + 관심종목 -->
