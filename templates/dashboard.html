@@ -39,7 +39,6 @@ button{font-family:inherit}
     <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: transparent; color: #a3a9b3; font-size: 14px;">관심종목</button>
     <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: transparent; color: #a3a9b3; font-size: 14px;">종목 분석</button>
     <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: transparent; color: #a3a9b3; font-size: 14px;">경제지표</button>
-    <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: transparent; color: #a3a9b3; font-size: 14px;">내 포트폴리오</button>
   </nav>
   <div style="display: flex; align-items: center; gap: 12px;">
     <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
@@ -124,44 +123,12 @@ button{font-family:inherit}
     </div>
   </div>
 
-  <div class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px;">
-    <div style="display: flex; align-items: center; justify-content: space-between;">
-      <h2 style="margin: 0; font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px;">내 포트폴리오 <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #3a3122; color: #d9a441; font-weight: 500;">예시</span></h2>
-      <span style="font-size: 11px; color: #a3a9b3;">원화 환산</span>
-    </div>
-    <div style="display: flex; align-items: flex-end; justify-content: space-between;">
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <span style="font-size: 12px; color: #a3a9b3;">총 평가금액</span>
-        <span class="num" style="font-size: 26px; font-weight: 600;">₩48,250,000</span>
-      </div>
-      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-        <span class="num" style="font-size: 13px; color: #f07178;">누적 +6.8%</span>
-        <span class="num" style="font-size: 13px; color: #f07178;">오늘 +₩192,000</span>
-      </div>
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 8px;">
-      <div style="display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px;">
-        <span style="flex-grow: 45; background: #3aa89b;"></span>
-        <span style="flex-grow: 40; background: #d9a441;"></span>
-        <span style="flex-grow: 15; background: #6b7280;"></span>
-      </div>
-      <div style="display: flex; gap: 16px; font-size: 12px; color: #cfd3da;">
-        <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #3aa89b;"></span>국내 45%</span>
-        <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #d9a441;"></span>미국 40%</span>
-        <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #6b7280;"></span>현금 15%</span>
-      </div>
-    </div>
-    <div style="display: flex; flex-direction: column; border-top: 1px solid #262a32;">
-      <div style="display: flex; justify-content: space-between; height: 36px; align-items: center; font-size: 13px; border-bottom: 1px solid #20242b;"><span>삼성전자</span><span class="num" style="color: #f07178;">+12.4%</span></div>
-      <div style="display: flex; justify-content: space-between; height: 36px; align-items: center; font-size: 13px; border-bottom: 1px solid #20242b;"><span>NVIDIA</span><span class="num" style="color: #f07178;">+31.0%</span></div>
-      <div style="display: flex; justify-content: space-between; height: 36px; align-items: center; font-size: 13px;"><span>LG에너지솔루션</span><span class="num" style="color: #7fb0ff;">−8.2%</span></div>
-    </div>
-  </div>
+{{RISK_CARD}}
 </section>
 
 <footer style="display: flex; justify-content: space-between; font-size: 11px; color: #8d939d;">
   <span>데이터: yfinance · FRED · 한국은행 ECOS — 시세는 약 15~20분 지연{{FAILED_NOTE}}</span>
-  <span>"예시" 표시 영역의 수치는 예시입니다</span>
+  <span>투자 참고용이며 수치의 정확성을 보장하지 않습니다</span>
 </footer>
 
 </div>

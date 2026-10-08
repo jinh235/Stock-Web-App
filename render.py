@@ -12,7 +12,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from config import (BOK_DATES, CALENDAR_DAYS, EARNINGS_IMPORTANCE, FOMC_DATES, FRED_RELEASES,
-                    INDEX_CARDS, MACRO_ITEMS)
+                    INDEX_CARDS, MACRO_ITEMS, RISK_ITEMS)
 from data import (fetch_earnings_date, fetch_ecos, fetch_fred, fetch_fred_release_dates, fetch_price_history,
                   fetch_price_series, fetch_watch_quote)
 from heatmap import build_heatmaps
@@ -301,6 +301,79 @@ def build_calendar(today=None):
     return "\n".join(rows), note
 
 
+# 상태별 글자색·배경색
+RISK_STYLES = {"정상": ("#3fbf8f", "#173a2f"), "주의": ("#d9a441", "#3a3122"), "위험": ("#f07178", "#3d2328")}
+RISK_HELP = {
+    "curve": "10년 국채금리 − 2년 국채금리. 0 아래(역전)는 경기침체 신호로 자주 쓰이며, 역전이 풀리는 시점도 주의 구간으로 봅니다.",
+    "hy": "신용등급 낮은 회사채의 추가 금리. 시장이 불안해지면 급등합니다 (보통 5% 이상이면 위험 구간).",
+    "drawdown": "최근 1년 최고 종가 대비 현재 위치. −10%는 조정, −20%는 약세장으로 흔히 부릅니다.",
+}
+
+
+def _risk_level(kind, value):
+    """지표 종류와 값으로 상태(정상/주의/위험)를 정합니다. 기준은 흔히 쓰이는 대략적인 구간입니다."""
+    if kind == "curve":
+        return "위험" if value < 0 else ("주의" if value < 0.5 else "정상")
+    if kind == "hy":
+        return "위험" if value >= 5 else ("주의" if value >= 3.5 else "정상")
+    return "위험" if value <= -20 else ("주의" if value <= -10 else "정상")   # drawdown
+
+
+def _risk_values(source, code, kind):
+    """(현재 값, 비교 글자)를 돌려줍니다. 실패하면 None."""
+    if kind == "drawdown":
+        series = fetch_price_series(code, period="1y")
+        if not series:
+            return None
+        dates, values = series
+        i_hi = max(range(len(values)), key=lambda i: values[i])
+        return (values[-1] / values[i_hi] - 1) * 100, f"고점 {dates[i_hi]}"
+    rows = fetch_fred(code)
+    if not rows:
+        return None
+    latest_date, latest = rows[-1]
+    month_ago = [v for d, v in rows if (latest_date - d).days >= 30]
+    compare = f"1개월 전 {month_ago[-1]:.2f}" if month_ago else ""
+    return latest, compare
+
+
+def build_risk_card():
+    """시장 위험 신호 카드 전체 HTML과, 받아오지 못한 지표 이름 목록."""
+    rows, failed = [], []
+    for i, (name, source, code, kind) in enumerate(RISK_ITEMS):
+        border = "" if i == len(RISK_ITEMS) - 1 else " border-bottom: 1px solid #20242b;"
+        result = _risk_values(source, code, kind)
+        if result is None:
+            failed.append(name)
+            value_text, compare, badge = "—", "", ""
+        else:
+            value, compare = result
+            level = _risk_level(kind, value)
+            fg, bg = RISK_STYLES[level]
+            if kind == "drawdown":
+                value_text = "고점" if value > -0.05 else f"{MINUS}{abs(value):.1f}%"
+            elif kind == "curve":
+                value_text = f"{MINUS if value < 0 else ''}{abs(value):.2f}%p"
+            else:
+                value_text = f"{value:.2f}%"
+            badge = (f'<span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: {bg}; '
+                     f'color: {fg}; font-weight: 600;">{level}</span>')
+        rows.append(
+            f'      <div title="{html.escape(RISK_HELP[kind])}" style="display: grid; grid-template-columns: 1.7fr 0.9fr 1.1fr 0.6fr; '
+            f'gap: 8px; align-items: center; height: 44px; font-size: 13px; cursor: help;{border}">'
+            f'<span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{html.escape(name)}</span>'
+            f'<span class="num" style="text-align: right; font-weight: 600;">{value_text}</span>'
+            f'<span class="num" style="text-align: right; font-size: 11px; color: #8d939d;">{html.escape(compare)}</span>'
+            f'<span style="text-align: right;">{badge}</span></div>')
+    card = ('  <div class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;">\n'
+            '    <div style="display: flex; align-items: center; justify-content: space-between;">\n'
+            '      <h2 style="margin: 0; font-size: 17px; font-weight: 600;">시장 위험 신호</h2>\n'
+            '      <span style="font-size: 11px; color: #a3a9b3;">항목에 마우스를 올리면 설명</span>\n'
+            '    </div>\n'
+            '    <div style="display: flex; flex-direction: column;">\n' + "\n".join(rows) + '\n    </div>\n  </div>')
+    return card, failed
+
+
 def market_status(now_kst):
     """상단 바의 장 상태 글자와 점 색. 공휴일은 따지지 않는 간단한 계산입니다."""
     if now_kst.weekday() < 5 and (9, 0) <= (now_kst.hour, now_kst.minute) < (15, 30):
@@ -330,6 +403,8 @@ def build_dashboard_html(now_kst=None):
     failed_names += watch_failed
 
     cal_rows, cal_note = build_calendar(now_kst.date())
+    risk_card, risk_failed = build_risk_card()
+    failed_names += risk_failed
     heatmap_tabs, heatmap_html, heatmap_failed = build_heatmaps()
     failed_names += heatmap_failed
 
@@ -350,6 +425,7 @@ def build_dashboard_html(now_kst=None):
         "{{WATCH_ROWS}}": watch_rows,
         "{{HEATMAP_TABS}}": heatmap_tabs,
         "{{CAL_ROWS}}": cal_rows,
+        "{{RISK_CARD}}": risk_card,
         "{{CAL_NOTE}}": cal_note,
         "{{HEATMAP}}": heatmap_html,
         "{{WATCH_ADD}}": watch_add,
