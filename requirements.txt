@@ -2,3 +2,4 @@ streamlit>=1.52
 pandas
 yfinance
 requests
+tzdata

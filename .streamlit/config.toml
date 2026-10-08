@@ -1,29 +1,12 @@
-# 앱 전체 색감·글꼴 설정 (가계부 앱과 같은 색)
+# 앱 전체 색감·글꼴 설정 - 목업(templates/dashboard.html)과 같은 어두운 화면으로 고정
 # 이 파일은 GitHub에 올라가야 적용됩니다. (secrets.toml과 달리 비밀 정보가 없어서 올려도 안전)
-# 밝은 화면([theme.light])과 어두운 화면([theme.dark])을 따로 정해 두면,
-# 휴대폰·PC의 다크 모드 설정에 맞춰 자동으로 바뀝니다.
 
 [theme]
-font = "Noto Sans KR:https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap, sans-serif"
+base = "dark"
+primaryColor = "#8fb8ff"
+backgroundColor = "#0f1115"
+secondaryBackgroundColor = "#181b21"
+textColor = "#ecebe6"
+borderColor = "#262a32"
+font = "IBM Plex Sans KR:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap, sans-serif"
 baseRadius = "0.6rem"
-# 숫자 카드(st.metric) 글자 크기를 대시보드 카드와 비슷하게
-metricValueFontSize = "1.4rem"
-metricValueFontWeight = 700
-# 그래프 색 순서: 1 파랑(수입) 2 주황(지출) 3 초록(저축) 4 노랑 5 분홍 6 녹색 7 보라 8 빨강
-chartCategoricalColors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
-
-[theme.light]
-primaryColor = "#2a78d6"
-backgroundColor = "#f4f4f2"
-secondaryBackgroundColor = "#ecebe7"
-textColor = "#0b0b0b"
-borderColor = "#e3e2de"
-chartCategoricalColors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
-
-[theme.dark]
-primaryColor = "#3987e5"
-backgroundColor = "#121211"
-secondaryBackgroundColor = "#262624"
-textColor = "#ffffff"
-borderColor = "#2e2e2b"
-chartCategoricalColors = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"]
