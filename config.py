@@ -17,7 +17,7 @@ SECRET_ITEMS = {
     "DATA_GO_KR_API_KEY": "공공데이터포털 인증키",
 }
 
-# 맨 위 큰 지수 카드 4개 (화면 왼쪽부터 순서대로)
+# 맨 위 큰 지수 카드 8개 (4개씩 두 줄, 왼쪽 위부터 순서대로)
 #   (화면 이름, 야후 파이낸스 기호, 종류, 곱할 값)
 #   종류 - "index": 지수·환율(소수 둘째 자리) / "yield": 금리(%, 변화는 %p) / "usd": 달러 가격(정수, $ 표시)
 #   곱할 값 - 보통 1. 엔화는 1엔 기준 값이 와서 100을 곱해 '원/100엔'으로 표시
@@ -25,13 +25,9 @@ INDEX_CARDS = [
     ("코스피", "^KS11", "index", 1),
     ("S&P 500", "^GSPC", "index", 1),
     ("나스닥", "^IXIC", "index", 1),
-    ("원/달러 환율", "KRW=X", "index", 1),
-]
-# 카드 아래 한 줄로 보여주는 보조 지표 (형식은 INDEX_CARDS와 같음)
-STRIP_ITEMS = [
-    ("원/100엔", "JPYKRW=X", "index", 100),
     ("나스닥 100", "^NDX", "index", 1),
-    ("달러 인덱스", "DX-Y.NYB", "index", 1),
+    ("원/달러 환율", "KRW=X", "index", 1),
+    ("원/100엔 환율", "JPYKRW=X", "index", 100),
     ("비트코인", "BTC-USD", "usd", 1),
     ("미 국채 10년물", "^TNX", "yield", 1),
 ]
@@ -46,6 +42,7 @@ MACRO_ITEMS = [
     ("미국 기준금리", "fred", "DFEDTARU", "rate"),
     ("한국 기준금리", "ecos", "722Y001/0101000", "rate"),
     ("미국 실업률", "fred", "UNRATE", "rate"),
+    ("달러 인덱스", "yahoo", "DX-Y.NYB", "level"),
     ("VIX 공포지수", "yahoo", "^VIX", "level"),
     ("WTI 유가 ($)", "yahoo", "CL=F", "level"),
 ]

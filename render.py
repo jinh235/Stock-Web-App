@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from config import INDEX_CARDS, MACRO_ITEMS, STRIP_ITEMS
+from config import INDEX_CARDS, MACRO_ITEMS
 from data import fetch_ecos, fetch_fred, fetch_price_history, fetch_watch_quote
 from sheets import load_watchlist
 
@@ -66,7 +66,7 @@ def _quote_texts(ticker, kind, scale):
 
 
 def _index_card(name, ticker, kind, scale):
-    """맨 위 큰 지수 카드 하나 (카드가 4개라 목업보다 글자·그래프를 키웠습니다)."""
+    """맨 위 큰 지수 카드 하나 (한 줄에 4개라 목업보다 글자·그래프를 키웠습니다)."""
     value_text, change_text, color, values = _quote_texts(ticker, kind, scale)
     spark = _sparkline(values, color if color != FLAT else MUTED, width=150, height=44) if values else ""
     return f'''  <div class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 6px;">
@@ -76,17 +76,6 @@ def _index_card(name, ticker, kind, scale):
       {spark}
     </div>
   </div>'''
-
-
-def _strip_item(name, ticker, kind, scale, is_last):
-    """카드 아래 한 줄짜리 보조 지표 하나."""
-    value_text, change_text, color, _ = _quote_texts(ticker, kind, scale)
-    border = "" if is_last else " border-right: 1px solid #262a32;"
-    return (f'  <div style="flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; '
-            f'gap: 10px; padding: 0 12px;{border}">'
-            f'<span style="font-size: 12px; color: #a3a9b3; white-space: nowrap;">{html.escape(name)}</span>'
-            f'<span class="num" style="font-size: 15px; font-weight: 600;">{value_text}</span>'
-            f'<span class="num" style="font-size: 12px; color: {color}; white-space: nowrap;">{change_text}</span></div>')
 
 
 def _macro_values(source, code, kind):
@@ -215,8 +204,7 @@ def build_dashboard_html(now_kst=None):
     status_text, status_color = market_status(now_kst)
 
     cards = "\n".join(_index_card(*item) for item in INDEX_CARDS)
-    strip = "\n".join(_strip_item(*item, is_last=(i == len(STRIP_ITEMS) - 1)) for i, item in enumerate(STRIP_ITEMS))
-    failed_names = [item[0] for item in INDEX_CARDS + STRIP_ITEMS if not fetch_price_history(item[1])]
+    failed_names = [item[0] for item in INDEX_CARDS if not fetch_price_history(item[1])]
 
     rows = []
     for i, item in enumerate(MACRO_ITEMS):
@@ -241,7 +229,6 @@ def build_dashboard_html(now_kst=None):
         "{{STATUS_COLOR}}": status_color,
         "{{UPDATED}}": now_kst.strftime("%H:%M:%S"),
         "{{INDEX_CARDS}}": cards,
-        "{{INDEX_STRIP}}": strip,
         "{{MACRO_ROWS}}": "\n".join(rows),
         "{{WATCH_ROWS}}": watch_rows,
         "{{WATCH_ADD}}": watch_add,
