@@ -22,7 +22,7 @@ button{font-family:inherit}
 </style>
 </head>
 <body>
-<div id="board" style="width: 1440px; height: 1295px; box-sizing: border-box; padding: 24px 32px; display: flex; flex-direction: column; gap: 18px; background: #0f1115;">
+<div id="board" style="width: 1440px; height: 1330px; box-sizing: border-box; padding: 24px 32px; display: flex; flex-direction: column; gap: 18px; background: #0f1115;">
 
 <!-- 상단 바 -->
 <header style="display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 48px;">
@@ -267,6 +267,29 @@ button{font-family:inherit}
 
 </div>
 <script>
+// 지수 카드 그래프: 마우스를 올린 위치의 날짜와 값을 작은 말풍선으로 보여줍니다.
+function fmtValue(v,k){
+  if(k==="yield") return v.toFixed(2)+"%";
+  if(k==="usd") return "$"+Math.round(v).toLocaleString("en-US");
+  return v.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+document.querySelectorAll(".chart").forEach(function(box){
+  var s=JSON.parse(box.dataset.series), n=s.v.length;
+  var lo=Math.min.apply(null,s.v), hi=Math.max.apply(null,s.v), span=(hi-lo)||1;
+  var hl=box.querySelector(".hl"), dot=box.querySelector(".dot"), tip=box.querySelector(".tip");
+  box.addEventListener("mousemove",function(e){
+    var r=box.getBoundingClientRect(), z=r.width/box.offsetWidth||1;   // 화면 축소(zoom) 보정
+    var x=(e.clientX-r.left)/z, w=box.offsetWidth, h=box.offsetHeight;
+    var i=Math.max(0,Math.min(n-1,Math.round(x/w*(n-1))));
+    var px=i/(n-1)*w, py=h-6-(s.v[i]-lo)/span*(h-12);
+    hl.style.left=px+"px"; dot.style.left=px+"px"; dot.style.top=py+"px";
+    tip.textContent=s.d[i]+"  "+fmtValue(s.v[i],s.k);
+    tip.style.display="block"; hl.style.display="block"; dot.style.display="block";
+    var tw=tip.offsetWidth; tip.style.left=Math.max(0,Math.min(w-tw,px-tw/2))+"px";
+  });
+  box.addEventListener("mouseleave",function(){hl.style.display="none";dot.style.display="none";tip.style.display="none";});
+});
+
 // 화면이 1440px보다 좁으면 대시보드 전체를 비율대로 줄입니다 (가로 스크롤 방지).
 function fitBoard(){var z=Math.min(1,window.innerWidth/1440);document.getElementById("board").style.zoom=z;}
 window.addEventListener("resize",fitBoard);fitBoard();

@@ -6,12 +6,13 @@
 여기서 목업과 똑같은 모양의 HTML 조각을 만들어 그 자리에 끼워 넣습니다.
 """
 import html
+import json
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from config import INDEX_CARDS, MACRO_ITEMS
-from data import fetch_ecos, fetch_fred, fetch_price_history, fetch_watch_quote
+from data import fetch_ecos, fetch_fred, fetch_price_history, fetch_price_series, fetch_watch_quote
 from sheets import load_watchlist
 
 TEMPLATE_PATH = Path(__file__).resolve().parent / "templates" / "dashboard.html"
@@ -29,32 +30,18 @@ def _color(diff):
     return UP if diff > 0 else DOWN
 
 
-def _sparkline(values, color, width=84, height=32):
-    """값 목록을 카드 오른쪽 작은 선 그래프로 바꿉니다."""
-    lo, hi = min(values), max(values)
-    span = (hi - lo) or 1
-    step = width / (len(values) - 1)
-    # 위아래 4px씩 여백을 두고, 값이 클수록 위쪽(y가 작은 쪽)에 찍힙니다.
-    points = " ".join(f"{i * step:.1f},{height - 4 - (v - lo) / span * (height - 8):.1f}"
-                      for i, v in enumerate(values))
-    # 변화 글자가 길면 그래프가 조금 좁아지도록(최소 40px) 해서 글자가 두 줄로 꺾이지 않게 합니다.
-    return (f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" preserveAspectRatio="none" '
-            f'style="flex: 0 1 {width}px; min-width: 40px;" aria-hidden="true">'
-            f'<polyline points="{points}" fill="none" stroke="{color}" stroke-width="2"/></svg>')
-
-
 def _quote_texts(ticker, kind, scale):
-    """한 종목의 (값 글자, 변화 글자, 색, 값 목록)을 만듭니다. 자료가 없으면 값 목록은 None."""
-    values = fetch_price_history(ticker)
-    if not values:
-        return "—", "자료 없음", MUTED, None
-    values = [v * scale for v in values]
+    """한 종목의 (값 글자, 변화 글자, 색, 날짜 목록, 값 목록)을 만듭니다. 자료가 없으면 목록은 None."""
+    series = fetch_price_series(ticker)
+    if not series:
+        return "—", "자료 없음", MUTED, None, None
+    dates, values = series[0], [v * scale for v in series[1]]
     last, prev = values[-1], values[-2]
     diff = last - prev
     color = _color(diff)
     arrow = "▲" if diff > 0 else ("▼" if diff < 0 else "")
     if kind == "yield":   # 금리는 %, 변화는 %p
-        return f"{last:.2f}%", f"{arrow} {abs(diff):.2f}%p".strip(), color, values
+        return f"{last:.2f}%", f"{arrow} {abs(diff):.2f}%p".strip(), color, dates, values
     pct = diff / prev * 100 if prev else 0
     sign = "+" if pct > 0 else (MINUS if pct < 0 else "")
     if kind == "usd":
@@ -62,19 +49,46 @@ def _quote_texts(ticker, kind, scale):
     else:
         value_text = f"{last:,.2f}"
         diff_text = f"{abs(diff):,.2f}" if abs(diff) < 100 else f"{abs(diff):,.1f}"  # 목업처럼 114.6
-    return value_text, f"{arrow} {diff_text} {sign}{abs(pct):.2f}%".strip(), color, values
+    return value_text, f"{arrow} {diff_text} {sign}{abs(pct):.2f}%".strip(), color, dates, values
+
+
+CHART_W, CHART_H = 300, 72   # 카드 그래프의 기준 크기 (실제로는 카드 폭에 맞춰 늘어남)
+
+
+def _card_chart(dates, values, color, kind):
+    """카드 아래쪽의 큰 선 그래프. 마우스를 올리면 그날 날짜와 값이 보입니다 (dashboard.html의 스크립트가 처리)."""
+    lo, hi = min(values), max(values)
+    span = (hi - lo) or 1
+    step = CHART_W / (len(values) - 1)
+    pts = [(i * step, CHART_H - 6 - (v - lo) / span * (CHART_H - 12)) for i, v in enumerate(values)]
+    line = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+    area = f"0,{CHART_H} {line} {CHART_W},{CHART_H}"          # 선 아래를 옅게 칠하는 영역
+    data = html.escape(json.dumps({"d": dates, "v": [round(v, 4) for v in values], "k": kind}))
+    return (f'<div class="chart" data-series="{data}" style="position: relative; height: {CHART_H}px; cursor: crosshair;">'
+            f'<svg width="100%" height="{CHART_H}" viewBox="0 0 {CHART_W} {CHART_H}" preserveAspectRatio="none" aria-hidden="true">'
+            f'<polygon points="{area}" fill="{color}" opacity="0.10"/>'
+            f'<polyline points="{line}" fill="none" stroke="{color}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'
+            f'<div class="hl" style="display: none; position: absolute; top: 0; bottom: 0; width: 1px; background: #5a606b;"></div>'
+            f'<div class="dot" style="display: none; position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; '
+            f'border-radius: 50%; background: {color}; border: 2px solid #181b21; box-sizing: content-box;"></div>'
+            f'<div class="tip num" style="display: none; position: absolute; top: 0; padding: 3px 8px; border-radius: 6px; '
+            f'background: #2a2f38; border: 1px solid #3a404b; font-size: 12px; white-space: nowrap; pointer-events: none;"></div>'
+            f'</div>')
 
 
 def _index_card(name, ticker, kind, scale):
-    """맨 위 큰 지수 카드 하나 (한 줄에 4개라 목업보다 글자·그래프를 키웠습니다)."""
-    value_text, change_text, color, values = _quote_texts(ticker, kind, scale)
-    spark = _sparkline(values, color if color != FLAT else MUTED, width=150, height=44) if values else ""
-    return f'''  <div class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 6px;">
-    <span style="font-size: 14px; color: #a3a9b3;">{html.escape(name)}</span>
-    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;">
-      <div style="display: flex; flex-direction: column; gap: 2px;"><span class="num" style="font-size: 28px; font-weight: 600;">{value_text}</span><span class="num" style="font-size: 14px; color: {color}; white-space: nowrap;">{change_text}</span></div>
-      {spark}
+    """맨 위 큰 지수 카드 하나: 윗줄에 이름·값·변화, 아래에 최근 1개월 그래프."""
+    value_text, change_text, color, dates, values = _quote_texts(ticker, kind, scale)
+    chart_color = color if color != FLAT else MUTED
+    chart = (_card_chart(dates, values, chart_color, kind) if values
+             else f'<div style="height: {CHART_H}px;"></div>')
+    return f'''  <div class="card" style="padding: 14px 18px 12px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; align-items: baseline; gap: 8px; white-space: nowrap; min-width: 0;">
+      <span style="font-size: 13px; color: #a3a9b3;">{html.escape(name)}</span>
+      <span class="num" style="font-size: 20px; font-weight: 600;">{value_text}</span>
+      <span class="num" style="font-size: 12px; color: {color}; margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;">{change_text}</span>
     </div>
+    {chart}
   </div>'''
 
 

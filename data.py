@@ -31,15 +31,23 @@ def get_secret(name):
 
 # ---------------------------------------------------------------- 야후 파이낸스
 @st.cache_data(ttl=REFRESH_PRICE_SEC, show_spinner=False)
-def fetch_price_history(ticker, period=SPARK_PERIOD):
-    """최근 기간의 일별 종가 목록(오래된 것 → 최신)을 돌려줍니다. 실패하면 None.
-    장중에는 마지막 값이 '오늘 현재가'입니다."""
+def fetch_price_series(ticker, period=SPARK_PERIOD):
+    """최근 기간의 일별 종가를 (날짜 목록, 값 목록)으로 돌려줍니다 (오래된 것 → 최신). 실패하면 None.
+    장중에는 마지막 값이 '오늘 현재가'입니다. 날짜는 그래프에 마우스를 올렸을 때 보여주는 용도입니다."""
     try:
         closes = yf.Ticker(ticker).history(period=period, interval="1d")["Close"].dropna()
-        values = [float(v) for v in closes]
-        return values if len(values) >= 2 else None
+        if len(closes) < 2:
+            return None
+        dates = [d.strftime("%m/%d") for d in closes.index]
+        return dates, [float(v) for v in closes]
     except Exception:
         return None
+
+
+def fetch_price_history(ticker, period=SPARK_PERIOD):
+    """fetch_price_series에서 값 목록만 꺼냅니다. 실패하면 None."""
+    series = fetch_price_series(ticker, period)
+    return series[1] if series else None
 
 
 # ---------------------------------------------------------------- FRED (미국)
